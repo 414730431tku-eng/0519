@@ -9,42 +9,53 @@ body{
 
   display:flex;
   flex-direction:column;
-  align-items:center;
   justify-content:center;
+  align-items:center;
 
-  font-family:'Arial',sans-serif;
+  font-family:"Courier New", monospace;
 
   background:
-    radial-gradient(circle at top,#3b82f6 0%,transparent 30%),
-    radial-gradient(circle at bottom,#9333ea 0%,transparent 30%),
-    linear-gradient(135deg,#050816 0%,#0b1026 45%,#111827 100%);
+    linear-gradient(
+      to bottom,
+      #1a001f 0%,
+      #070014 100%
+    );
 
   overflow:hidden;
+
+  position:relative;
 }
 
-/* 背景發光動畫 */
+/* 像素星空背景 */
 body::before{
   content:"";
 
   position:fixed;
-  inset:-200px;
+  inset:0;
 
-  background:
-    conic-gradient(
-      from 180deg,
-      #00f0ff33,
-      #7c3aed33,
-      #ff008033,
-      #00f0ff33
-    );
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.8) 1px, transparent 1px);
 
-  animation:spin 18s linear infinite;
+  background-size:40px 40px;
 
-  filter:blur(80px);
+  opacity:.15;
+
+  animation:starsMove 30s linear infinite;
 
   z-index:-2;
 }
 
+@keyframes starsMove{
+  from{
+    transform:translateY(0);
+  }
+
+  to{
+    transform:translateY(80px);
+  }
+}
+
+/* 掃描線效果 */
 body::after{
   content:"";
 
@@ -53,11 +64,11 @@ body::after{
 
   background:
     repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,.02) 0px,
-      rgba(255,255,255,.02) 1px,
-      transparent 1px,
-      transparent 80px
+      to bottom,
+      rgba(255,255,255,.03) 0px,
+      rgba(255,255,255,.03) 2px,
+      transparent 2px,
+      transparent 5px
     );
 
   pointer-events:none;
@@ -65,106 +76,121 @@ body::after{
   z-index:-1;
 }
 
-@keyframes spin{
-  from{
-    transform:rotate(0deg);
-  }
-
-  to{
-    transform:rotate(360deg);
-  }
-}
-
+/* 遊戲外框 */
 #wrap{
+  padding:18px;
+
+  border:6px solid #ffcc00;
+
+  border-radius:12px;
+
+  background:#120018;
+
+  box-shadow:
+    0 0 0 4px #ff0088,
+    0 0 30px rgba(255,0,136,.5),
+    0 0 80px rgba(0,255,255,.2);
+
   position:relative;
 
-  border-radius:28px;
-
-  overflow:hidden;
-
-  border:2px solid rgba(255,255,255,.12);
-
-  backdrop-filter:blur(12px);
-
-  background:rgba(255,255,255,.04);
-
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.05),
-    0 0 50px rgba(0,255,255,.15),
-    0 0 100px rgba(140,0,255,.12);
-
-  transition:.4s;
+  transform:rotate(-0.5deg);
 }
 
-#wrap:hover{
-  transform:scale(1.01);
+/* 上方標題感 */
+#wrap::before{
+  content:"AI ROCK PAPER SCISSORS";
 
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.08),
-    0 0 80px rgba(0,255,255,.25),
-    0 0 140px rgba(140,0,255,.2);
+  position:absolute;
+
+  top:-26px;
+  left:50%;
+
+  transform:translateX(-50%);
+
+  background:#ffcc00;
+
+  color:#111;
+
+  padding:6px 20px;
+
+  border-radius:999px;
+
+  font-size:14px;
+  font-weight:bold;
+
+  letter-spacing:2px;
 }
 
+/* canvas */
 canvas{
   display:block;
 
-  border-radius:24px;
+  border:4px solid #00e5ff;
+
+  border-radius:4px;
+
+  image-rendering:pixelated;
+
+  box-shadow:
+    inset 0 0 30px rgba(0,255,255,.15),
+    0 0 30px rgba(0,255,255,.3);
+
+  background:#000;
 }
 
+/* 隱藏影片 */
 video{
   display:none;
 }
 
+/* Footer 改成街機資訊列 */
 #footer{
   margin-top:18px;
 
-  padding:10px 18px;
+  background:#111;
 
-  border-radius:999px;
+  color:#00ff66;
 
-  background:rgba(255,255,255,.05);
+  border:3px solid #00ff66;
 
-  border:1px solid rgba(255,255,255,.08);
+  padding:12px 20px;
 
-  backdrop-filter:blur(10px);
+  border-radius:6px;
 
-  color:rgba(255,255,255,.72);
+  font-size:12px;
 
-  font-size:13px;
-
-  letter-spacing:1px;
+  letter-spacing:2px;
 
   text-align:center;
 
+  text-transform:uppercase;
+
   box-shadow:
-    0 0 20px rgba(0,0,0,.25);
+    0 0 20px rgba(0,255,100,.3);
+
+  animation:blink 1.5s infinite;
 }
 
-/* 漂浮動畫 */
-#wrap{
-  animation:floaty 5s ease-in-out infinite;
-}
-
-@keyframes floaty{
-
+@keyframes blink{
   0%{
-    transform:translateY(0px);
+    opacity:1;
   }
 
   50%{
-    transform:translateY(-8px);
+    opacity:.7;
   }
 
   100%{
-    transform:translateY(0px);
+    opacity:1;
   }
 }
 
 /* 手機版 */
-@media(max-width:768px){
+@media (max-width:768px){
 
   #wrap{
     width:95vw;
+    padding:10px;
   }
 
   canvas{
@@ -174,7 +200,7 @@ video{
 
   #footer{
     width:90%;
-    font-size:11px;
+    font-size:10px;
     line-height:1.6;
   }
 }
