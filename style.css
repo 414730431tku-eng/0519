@@ -5,13 +5,6 @@
 }
 
 body{
-  background:linear-gradient(
-    135deg,
-    #0d0d1a 0%,
-    #1a1040 50%,
-    #0a1520 100%
-  );
-
   min-height:100vh;
 
   display:flex;
@@ -19,20 +12,103 @@ body{
   align-items:center;
   justify-content:center;
 
-  font-family:Arial,sans-serif;
+  font-family:'Arial',sans-serif;
+
+  background:
+    radial-gradient(circle at top,#3b82f6 0%,transparent 30%),
+    radial-gradient(circle at bottom,#9333ea 0%,transparent 30%),
+    linear-gradient(135deg,#050816 0%,#0b1026 45%,#111827 100%);
+
+  overflow:hidden;
+}
+
+/* 背景發光動畫 */
+body::before{
+  content:"";
+
+  position:fixed;
+  inset:-200px;
+
+  background:
+    conic-gradient(
+      from 180deg,
+      #00f0ff33,
+      #7c3aed33,
+      #ff008033,
+      #00f0ff33
+    );
+
+  animation:spin 18s linear infinite;
+
+  filter:blur(80px);
+
+  z-index:-2;
+}
+
+body::after{
+  content:"";
+
+  position:fixed;
+  inset:0;
+
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.02) 0px,
+      rgba(255,255,255,.02) 1px,
+      transparent 1px,
+      transparent 80px
+    );
+
+  pointer-events:none;
+
+  z-index:-1;
+}
+
+@keyframes spin{
+  from{
+    transform:rotate(0deg);
+  }
+
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 #wrap{
-  border-radius:18px;
+  position:relative;
+
+  border-radius:28px;
+
   overflow:hidden;
 
+  border:2px solid rgba(255,255,255,.12);
+
+  backdrop-filter:blur(12px);
+
+  background:rgba(255,255,255,.04);
+
   box-shadow:
-    0 0 80px rgba(80,160,255,.18),
-    0 0 0 1px rgba(255,255,255,.08);
+    0 0 0 1px rgba(255,255,255,.05),
+    0 0 50px rgba(0,255,255,.15),
+    0 0 100px rgba(140,0,255,.12);
+
+  transition:.4s;
+}
+
+#wrap:hover{
+  transform:scale(1.01);
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 0 80px rgba(0,255,255,.25),
+    0 0 140px rgba(140,0,255,.2);
 }
 
 canvas{
   display:block;
+
+  border-radius:24px;
 }
 
 video{
@@ -40,13 +116,65 @@ video{
 }
 
 #footer{
-  margin-top:10px;
+  margin-top:18px;
 
-  color:rgba(255,255,255,.28);
+  padding:10px 18px;
 
-  font-size:12px;
+  border-radius:999px;
 
-  letter-spacing:.5px;
+  background:rgba(255,255,255,.05);
+
+  border:1px solid rgba(255,255,255,.08);
+
+  backdrop-filter:blur(10px);
+
+  color:rgba(255,255,255,.72);
+
+  font-size:13px;
+
+  letter-spacing:1px;
 
   text-align:center;
+
+  box-shadow:
+    0 0 20px rgba(0,0,0,.25);
+}
+
+/* 漂浮動畫 */
+#wrap{
+  animation:floaty 5s ease-in-out infinite;
+}
+
+@keyframes floaty{
+
+  0%{
+    transform:translateY(0px);
+  }
+
+  50%{
+    transform:translateY(-8px);
+  }
+
+  100%{
+    transform:translateY(0px);
+  }
+}
+
+/* 手機版 */
+@media(max-width:768px){
+
+  #wrap{
+    width:95vw;
+  }
+
+  canvas{
+    width:100%;
+    height:auto;
+  }
+
+  #footer{
+    width:90%;
+    font-size:11px;
+    line-height:1.6;
+  }
 }
