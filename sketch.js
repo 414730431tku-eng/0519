@@ -99,53 +99,55 @@ newQuestion();
 function isThumbsUp(l){
 
   return (
-    l[4].y < l[3].y &&
-    l[8].y > l[6].y &&
-    l[12].y > l[10].y &&
-    l[16].y > l[14].y &&
-    l[20].y > l[18].y
+
+    l[4].y < l[2].y &&
+
+    l[8].y > l[5].y &&
+
+    l[12].y > l[9].y &&
+
+    l[16].y > l[13].y &&
+
+    l[20].y > l[17].y
+
   );
+
 }
 
 function isOne(l){
 
   return (
+
     l[8].y < l[6].y &&
+
     l[12].y > l[10].y &&
+
     l[16].y > l[14].y &&
-    l[20].y > l[18].y
+
+    l[20].y > l[18].y &&
+
+    !isThumbsUp(l)
+
   );
-}
 
-function isFive(l){
-
-  return (
-    l[8].y < l[6].y &&
-    l[12].y < l[10].y &&
-    l[16].y < l[14].y &&
-    l[20].y < l[18].y
-  );
-}
-
-function isOK(l){
-
-  const dx = l[4].x - l[8].x;
-  const dy = l[4].y - l[8].y;
-
-  return Math.sqrt(dx*dx + dy*dy) < 0.05;
 }
 
 function detectGesture(l){
 
-  if(isOK(l)) return 'OK';
+  if(isThumbsUp(l))
+    return 'THUMB';
 
-  if(isOne(l)) return 'ONE';
+  if(isOK(l))
+    return 'OK';
 
-  if(isFive(l)) return 'FIVE';
+  if(isOne(l))
+    return 'ONE';
 
-  if(isThumbsUp(l)) return 'THUMB';
+  if(isFive(l))
+    return 'FIVE';
 
   return null;
+
 }
 
 const hands = new Hands({
@@ -174,6 +176,9 @@ hands.onResults((r)=>{
 
   const gesture =
   detectGesture(lm);
+  
+  currentGesture =
+  gesture || '';
 
   if(gesture !== lastGesture){
 
@@ -188,18 +193,21 @@ hands.onResults((r)=>{
 
   if(state === 'WRONG'){
 
-    if(gesture === 'THUMB'){
+  if(gesture === 'THUMB'){
 
-      state = 'PLAY';
+    state = 'PLAY';
 
-      resultText = '';
+    resultText =
+    '重新作答';
 
-      cooldownUntil =
-      Date.now()+1000;
-    }
+    lastGesture = null;
 
-    return;
+    cooldownUntil =
+    Date.now()+1500;
   }
+
+  return;
+}
 
   if(state !== 'PLAY')
     return;
@@ -371,6 +379,16 @@ function loop(){
     20,
     240
   );
+
+  g.font =
+  '20px Arial';
+
+  g.fillText(
+  '手勢：' + currentGesture,
+  20,
+  265
+);
+
 
   g.font =
   'bold 30px Arial';
