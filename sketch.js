@@ -136,15 +136,12 @@ function isOne(l){
 
 function isOK(l){
 
-  const dx = (l[4].x - l[8].x);
-  const dy = (l[4].y - l[8].y);
-  const dist = Math.sqrt(dx*dx + dy*dy);
-
   return (
-    dist < 0.04 &&
+    l[8].y > l[6].y &&
     l[12].y > l[10].y &&
     l[16].y > l[14].y &&
-    l[20].y > l[18].y
+    l[20].y > l[18].y &&
+    l[4].y > l[2].y
   );
 
 }
@@ -294,7 +291,7 @@ hands.onResults((r)=>{
     state = 'WRONG';
 
     resultText =
-    '❌ Try Again! 比 👍';
+    '❌ Try Again! 比 2';
 
   }
 
@@ -435,7 +432,7 @@ function loop(){
   );
 
   g.fillText(
-    '👌 = ' + choices.OK,
+    '✊ = ' + choices.OK,
     20,
     120
   );
