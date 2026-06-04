@@ -297,10 +297,40 @@ const cam = new Camera(vid,{
 });
 
 cam.start().catch((err)=>{
-  console.error('Camera start failed:',err);
-  resultText = '無法啟用相機：' + (err.name || err.message || err);
+  console.error('Camera.start() failed:', err);
+  resultText = 'Camera 啟動失敗，嘗試備援...';
   state = 'ERROR';
-  // 提示於主控台，並建議使用者檢查權限/裝置
+
+  // 備援：直接使用 getUserMedia 並手動送影格給 hands
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    console.error('getUserMedia not supported');
+    resultText = '瀏覽器不支援相機存取';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({video:true}).then((stream)=>{
+    console.log('Fallback getUserMedia success', stream);
+    vid.srcObject = stream;
+    vid.play().catch(e=>console.warn('vid.play() failed',e));
+
+    // 手動送影格給 hands（每 100ms）
+    const fallbackInterval = setInterval(async()=>{
+      if(state === 'ERROR'){
+        try{ await hands.send({image:vid}); }
+        catch(e){ console.warn('hands.send fallback failed',e); }
+      } else {
+        // 若狀態恢復，不再需要備援
+      }
+    },100);
+
+    resultText = '已啟用相機備援';
+    state = 'PLAY';
+
+  }).catch((err2)=>{
+    console.error('Fallback getUserMedia failed:', err2);
+    resultText = '無法存取相機：' + (err2.name || err2.message || err2);
+    state = 'ERROR';
+  });
 });
 
 function drawVideo(){
