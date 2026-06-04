@@ -10,72 +10,49 @@ const vid = document.getElementById('vid');
 let lm = null;
 
 let score = 0;
-
+let question = '';
 let answer = 0;
-let question = "";
 
-let playerAnswer = null;
-
-let state = "PLAY";
-
-let resultText = "";
+let resultText = '';
+let state = 'PLAY';
 
 let cooldownUntil = 0;
 
+let lastGesture = null;
+let gestureStart = 0;
+
+let choices = {
+  OK: 0,
+  ONE: 0,
+  FIVE: 0
+};
+
 const QUESTIONS = [
+  {q:"1+1",a:2},
+  {q:"1+2",a:3},
+  {q:"1+3",a:4},
+  {q:"1+4",a:5},
 
-{q:"0+0",a:0},
-{q:"0+1",a:1},
-{q:"0+2",a:2},
-{q:"0+3",a:3},
-{q:"0+4",a:4},
-{q:"0+5",a:5},
+  {q:"2+1",a:3},
+  {q:"2+2",a:4},
+  {q:"2+3",a:5},
 
-{q:"1+0",a:1},
-{q:"1+1",a:2},
-{q:"1+2",a:3},
-{q:"1+3",a:4},
-{q:"1+4",a:5},
+  {q:"3+1",a:4},
+  {q:"3+2",a:5},
 
-{q:"2+0",a:2},
-{q:"2+1",a:3},
-{q:"2+2",a:4},
-{q:"2+3",a:5},
+  {q:"5-1",a:4},
+  {q:"5-2",a:3},
+  {q:"5-3",a:2},
+  {q:"5-4",a:1},
 
-{q:"3+0",a:3},
-{q:"3+1",a:4},
-{q:"3+2",a:5},
+  {q:"4-1",a:3},
+  {q:"4-2",a:2},
+  {q:"4-3",a:1},
 
-{q:"4+0",a:4},
-{q:"4+1",a:5},
+  {q:"3-1",a:2},
+  {q:"3-2",a:1},
 
-{q:"5+0",a:5},
-
-{q:"1-0",a:1},
-{q:"1-1",a:0},
-
-{q:"2-0",a:2},
-{q:"2-1",a:1},
-{q:"2-2",a:0},
-
-{q:"3-0",a:3},
-{q:"3-1",a:2},
-{q:"3-2",a:1},
-{q:"3-3",a:0},
-
-{q:"4-0",a:4},
-{q:"4-1",a:3},
-{q:"4-2",a:2},
-{q:"4-3",a:1},
-{q:"4-4",a:0},
-
-{q:"5-0",a:5},
-{q:"5-1",a:4},
-{q:"5-2",a:3},
-{q:"5-3",a:2},
-{q:"5-4",a:1},
-{q:"5-5",a:0}
-
+  {q:"2-1",a:1}
 ];
 
 const SKEL = [
@@ -86,256 +63,325 @@ const SKEL = [
 [13,17],[0,17],[17,18],[18,19],[19,20]
 ];
 
+function shuffle(arr){
+  return [...arr].sort(()=>Math.random()-0.5);
+}
+
 function newQuestion(){
 
-  const r =
+  const q =
   QUESTIONS[
     Math.floor(
       Math.random()*QUESTIONS.length
     )
   ];
 
-  question = r.q + " = ?";
-  answer = r.a;
+  question = q.q + ' = ?';
+  answer = q.a;
+
+  let nums =
+  shuffle([0,1,2,3,4,5])
+  .slice(0,3);
+
+  if(!nums.includes(answer)){
+    nums[0] = answer;
+  }
+
+  nums = shuffle(nums);
+
+  choices.OK = nums[0];
+  choices.ONE = nums[1];
+  choices.FIVE = nums[2];
 }
 
 newQuestion();
 
-function countFingers(l){
-
-  let c = 0;
-
-  if(Math.abs(l[4].x-l[3].x) > 0.05) c++;
-
-  if(l[8].y < l[6].y) c++;
-
-  if(l[12].y < l[10].y) c++;
-
-  if(l[16].y < l[14].y) c++;
-
-  if(l[20].y < l[18].y) c++;
-
-  return c;
-}
-
 function isThumbsUp(l){
 
   return (
-
     l[4].y < l[3].y &&
-
     l[8].y > l[6].y &&
-
     l[12].y > l[10].y &&
-
     l[16].y > l[14].y &&
-
     l[20].y > l[18].y
-
   );
 }
 
+function isOne(l){
+
+  return (
+    l[8].y < l[6].y &&
+    l[12].y > l[10].y &&
+    l[16].y > l[14].y &&
+    l[20].y > l[18].y
+  );
+}
+
+function isFive(l){
+
+  return (
+    l[8].y < l[6].y &&
+    l[12].y < l[10].y &&
+    l[16].y < l[14].y &&
+    l[20].y < l[18].y
+  );
+}
+
+function isOK(l){
+
+  const dx = l[4].x - l[8].x;
+  const dy = l[4].y - l[8].y;
+
+  return Math.sqrt(dx*dx + dy*dy) < 0.05;
+}
+
+function detectGesture(l){
+
+  if(isOK(l)) return 'OK';
+
+  if(isOne(l)) return 'ONE';
+
+  if(isFive(l)) return 'FIVE';
+
+  if(isThumbsUp(l)) return 'THUMB';
+
+  return null;
+}
+
 const hands = new Hands({
- locateFile:(f)=>
- `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  locateFile:(f)=>
+  `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
 });
 
 hands.setOptions({
- maxNumHands:1,
- modelComplexity:1,
- minDetectionConfidence:0.7,
- minTrackingConfidence:0.5
+  maxNumHands:1,
+  modelComplexity:1,
+  minDetectionConfidence:0.7,
+  minTrackingConfidence:0.5
 });
 
 hands.onResults((r)=>{
 
- if(
-   !r.multiHandLandmarks ||
-   !r.multiHandLandmarks.length
- ) return;
+  if(
+    !r.multiHandLandmarks ||
+    !r.multiHandLandmarks.length
+  ) return;
 
- lm = r.multiHandLandmarks[0];
+  lm = r.multiHandLandmarks[0];
 
- if(Date.now() < cooldownUntil)
-   return;
+  if(Date.now() < cooldownUntil)
+    return;
 
- if(state === "WRONG"){
+  const gesture =
+  detectGesture(lm);
 
-   if(isThumbsUp(lm)){
+  if(gesture !== lastGesture){
 
-     state = "PLAY";
+    lastGesture = gesture;
+    gestureStart = Date.now();
 
-     resultText = "重新作答";
+    return;
+  }
 
-     cooldownUntil =
-       Date.now()+1500;
-   }
+  if(Date.now()-gestureStart < 800)
+    return;
 
-   return;
- }
+  if(state === 'WRONG'){
 
- playerAnswer =
-   countFingers(lm);
+    if(gesture === 'THUMB'){
 
- if(playerAnswer === answer){
+      state = 'PLAY';
 
-   score++;
+      resultText = '';
 
-   resultText =
-     "✅ Correct!";
+      cooldownUntil =
+      Date.now()+1000;
+    }
 
-   state = "CORRECT";
+    return;
+  }
 
-   setTimeout(()=>{
+  if(state !== 'PLAY')
+    return;
 
-     newQuestion();
+  let selected = null;
 
-     state = "PLAY";
+  if(gesture === 'OK')
+    selected = choices.OK;
 
-     resultText = "";
+  if(gesture === 'ONE')
+    selected = choices.ONE;
 
-   },1500);
+  if(gesture === 'FIVE')
+    selected = choices.FIVE;
 
- }else{
+  if(selected === null)
+    return;
 
-   state = "WRONG";
+  if(selected === answer){
 
-   resultText =
-     "❌ Try Again! 比 👍";
- }
+    score++;
+
+    state = 'CORRECT';
+
+    resultText =
+    '✅ Correct!';
+
+    cooldownUntil =
+    Date.now()+1500;
+
+    setTimeout(()=>{
+
+      newQuestion();
+
+      state = 'PLAY';
+
+      resultText = '';
+
+    },1500);
+
+  }else{
+
+    state = 'WRONG';
+
+    resultText =
+    '❌ Try Again! 比 👍';
+
+  }
 
 });
 
 new Camera(vid,{
- onFrame:async()=>{
-   await hands.send({image:vid});
- },
- width:W,
- height:H
+  onFrame:async()=>{
+    await hands.send({image:vid});
+  },
+  width:W,
+  height:H
 }).start();
 
 function drawVideo(){
 
- if(vid.readyState < 2)
-   return;
+  if(vid.readyState < 2)
+    return;
 
- g.save();
+  g.save();
 
- g.translate(W,0);
+  g.translate(W,0);
+  g.scale(-1,1);
 
- g.scale(-1,1);
+  g.drawImage(
+    vid,
+    0,
+    0,
+    W,
+    H
+  );
 
- g.drawImage(
-   vid,
-   0,
-   0,
-   W,
-   H
- );
-
- g.restore();
+  g.restore();
 }
 
 function drawSkeleton(){
 
- if(!lm) return;
+  if(!lm) return;
 
- g.strokeStyle =
- "#00ff88";
+  g.strokeStyle = '#00ff88';
+  g.lineWidth = 2;
 
- g.lineWidth = 2;
+  SKEL.forEach(([a,b])=>{
 
- SKEL.forEach(([a,b])=>{
+    const ax =
+    (1-lm[a].x)*W;
 
-  const ax =
-  (1-lm[a].x)*W;
+    const ay =
+    lm[a].y*H;
 
-  const ay =
-  lm[a].y*H;
+    const bx =
+    (1-lm[b].x)*W;
 
-  const bx =
-  (1-lm[b].x)*W;
+    const by =
+    lm[b].y*H;
 
-  const by =
-  lm[b].y*H;
+    g.beginPath();
 
-  g.beginPath();
-  g.moveTo(ax,ay);
-  g.lineTo(bx,by);
-  g.stroke();
+    g.moveTo(ax,ay);
+    g.lineTo(bx,by);
 
- });
-
+    g.stroke();
+  });
 }
 
 function loop(){
 
- g.clearRect(0,0,W,H);
+  g.clearRect(0,0,W,H);
 
- drawVideo();
+  drawVideo();
+  drawSkeleton();
 
- drawSkeleton();
+  g.fillStyle =
+  'rgba(0,0,0,.7)';
 
- g.fillStyle =
- "rgba(0,0,0,.6)";
- g.fillRect(
- 10,
- 10,
- 280,
- 160
- );
+  g.fillRect(
+    10,
+    10,
+    360,
+    280
+  );
 
- g.fillStyle =
- "#fff";
+  g.fillStyle =
+  '#fff';
 
- g.font =
- "bold 28px Arial";
+  g.font =
+  'bold 28px Arial';
 
- g.fillText(
- "手勢算數王",
- 20,
- 40
- );
+  g.fillText(
+    '手勢算數王',
+    20,
+    40
+  );
 
- g.font =
- "24px Arial";
+  g.font =
+  '24px Arial';
 
- g.fillText(
- question,
- 20,
- 80
- );
+  g.fillText(
+    question,
+    20,
+    80
+  );
 
- g.fillText(
- "答案："+answer,
- 20,
- 115
- );
+  g.fillText(
+    '👌 = ' + choices.OK,
+    20,
+    120
+  );
 
- g.fillText(
- "手勢："+(
- playerAnswer ?? "-"
- ),
- 20,
- 150
- );
+  g.fillText(
+    '☝️ = ' + choices.ONE,
+    20,
+    160
+  );
 
- g.fillText(
- "分數："+score,
- 20,
- 185
- );
+  g.fillText(
+    '🖐 = ' + choices.FIVE,
+    20,
+    200
+  );
 
- g.font =
- "bold 36px Arial";
+  g.fillText(
+    '分數：' + score,
+    20,
+    240
+  );
 
- g.fillText(
- resultText,
- 20,
- 240
- );
+  g.font =
+  'bold 30px Arial';
 
- requestAnimationFrame(loop);
+  g.fillText(
+    resultText,
+    20,
+    280
+  );
+
+  requestAnimationFrame(loop);
 }
 
 loop();
