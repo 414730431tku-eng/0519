@@ -6,201 +6,30 @@
 
 body{
   min-height:100vh;
-
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
-
-  font-family:"Courier New", monospace;
-
-  background:
-    linear-gradient(
-      to bottom,
-      #1a001f 0%,
-      #070014 100%
-    );
-
-  overflow:hidden;
-
-  position:relative;
+  background:#111;
+  font-family:Arial;
 }
 
-/* 像素星空背景 */
-body::before{
-  content:"";
-
-  position:fixed;
-  inset:0;
-
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,.8) 1px, transparent 1px);
-
-  background-size:40px 40px;
-
-  opacity:.15;
-
-  animation:starsMove 30s linear infinite;
-
-  z-index:-2;
-}
-
-@keyframes starsMove{
-  from{
-    transform:translateY(0);
-  }
-
-  to{
-    transform:translateY(80px);
-  }
-}
-
-/* 掃描線效果 */
-body::after{
-  content:"";
-
-  position:fixed;
-  inset:0;
-
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.03) 0px,
-      rgba(255,255,255,.03) 2px,
-      transparent 2px,
-      transparent 5px
-    );
-
-  pointer-events:none;
-
-  z-index:-1;
-}
-
-/* 遊戲外框 */
 #wrap{
-  padding:18px;
-
-  border:6px solid #ffcc00;
-
-  border-radius:12px;
-
-  background:#120018;
-
-  box-shadow:
-    0 0 0 4px #ff0088,
-    0 0 30px rgba(255,0,136,.5),
-    0 0 80px rgba(0,255,255,.2);
-
-  position:relative;
-
-  transform:rotate(-0.5deg);
+  border:4px solid #00e5ff;
+  padding:10px;
 }
 
-/* 上方標題感 */
-#wrap::before{
-  content:"AI ROCK PAPER SCISSORS";
-
-  position:absolute;
-
-  top:-26px;
-  left:50%;
-
-  transform:translateX(-50%);
-
-  background:#ffcc00;
-
-  color:#111;
-
-  padding:6px 20px;
-
-  border-radius:999px;
-
-  font-size:14px;
-  font-weight:bold;
-
-  letter-spacing:2px;
-}
-
-/* canvas */
 canvas{
   display:block;
-
-  border:4px solid #00e5ff;
-
-  border-radius:4px;
-
-  image-rendering:pixelated;
-
-  box-shadow:
-    inset 0 0 30px rgba(0,255,255,.15),
-    0 0 30px rgba(0,255,255,.3);
-
-  background:#000;
+  background:black;
 }
 
-/* 隱藏影片 */
 video{
   display:none;
 }
 
-/* Footer 改成街機資訊列 */
 #footer{
-  margin-top:18px;
-
-  background:#111;
-
-  color:#00ff66;
-
-  border:3px solid #00ff66;
-
-  padding:12px 20px;
-
-  border-radius:6px;
-
-  font-size:12px;
-
-  letter-spacing:2px;
-
-  text-align:center;
-
-  text-transform:uppercase;
-
-  box-shadow:
-    0 0 20px rgba(0,255,100,.3);
-
-  animation:blink 1.5s infinite;
-}
-
-@keyframes blink{
-  0%{
-    opacity:1;
-  }
-
-  50%{
-    opacity:.7;
-  }
-
-  100%{
-    opacity:1;
-  }
-}
-
-/* 手機版 */
-@media (max-width:768px){
-
-  #wrap{
-    width:95vw;
-    padding:10px;
-  }
-
-  canvas{
-    width:100%;
-    height:auto;
-  }
-
-  #footer{
-    width:90%;
-    font-size:10px;
-    line-height:1.6;
-  }
+  margin-top:15px;
+  color:white;
+  font-size:18px;
 }
