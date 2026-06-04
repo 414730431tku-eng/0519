@@ -27,6 +27,8 @@ let choices = {
   FIVE: 0
 };
 
+let currentGesture = '';
+
 const QUESTIONS = [
   {q:"1+1",a:2},
   {q:"1+2",a:3},
@@ -128,6 +130,33 @@ function isOne(l){
 
     !isThumbsUp(l)
 
+  );
+
+}
+
+function isOK(l){
+
+  const dx = (l[4].x - l[8].x);
+  const dy = (l[4].y - l[8].y);
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  return (
+    dist < 0.04 &&
+    l[12].y > l[10].y &&
+    l[16].y > l[14].y &&
+    l[20].y > l[18].y
+  );
+
+}
+
+function isFive(l){
+
+  return (
+    l[8].y < l[6].y &&
+    l[12].y < l[10].y &&
+    l[16].y < l[14].y &&
+    l[20].y < l[18].y &&
+    !isThumbsUp(l)
   );
 
 }
@@ -259,13 +288,20 @@ hands.onResults((r)=>{
 
 });
 
-new Camera(vid,{
+const cam = new Camera(vid,{
   onFrame:async()=>{
     await hands.send({image:vid});
   },
   width:W,
   height:H
-}).start();
+});
+
+cam.start().catch((err)=>{
+  console.error('Camera start failed:',err);
+  resultText = '無法啟用相機：' + (err.name || err.message || err);
+  state = 'ERROR';
+  // 提示於主控台，並建議使用者檢查權限/裝置
+});
 
 function drawVideo(){
 
