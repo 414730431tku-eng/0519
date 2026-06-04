@@ -174,10 +174,6 @@ function isTwo(l){
 }
 
 function detectGesture(l){
-
-  if(isThumbsUp(l))
-    return 'THUMB';
-
   if(isOK(l))
     return 'OK';
 
