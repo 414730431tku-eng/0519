@@ -1,11 +1,5 @@
 'use strict';
 
-// =====================================
-// 手勢算數王
-// 單手版 0~5
-// 答錯後 👍 重答
-// =====================================
-
 const W = 640;
 const H = 480;
 
@@ -15,543 +9,333 @@ const vid = document.getElementById('vid');
 
 let lm = null;
 
-// =====================================
-// 骨架
-// =====================================
-
-const SKEL = [
-    [0,1],[1,2],[2,3],[3,4],
-    [0,5],[5,6],[6,7],[7,8],
-    [5,9],[9,10],[10,11],[11,12],
-    [9,13],[13,14],[14,15],[15,16],
-    [13,17],[0,17],[17,18],[18,19],[19,20]
-];
-
-// =====================================
-// 遊戲資料
-// =====================================
-
 let score = 0;
 
-let currentQuestion = '';
-let correctAnswer = 0;
+let answer = 0;
+let question = "";
 
 let playerAnswer = null;
 
-let resultText = '';
-let resultColor = '#FFFFFF';
+let state = "PLAY";
 
-let answerLock = false;
-let answerTime = 0;
+let resultText = "";
 
-let wrongAnswer = false;
+let cooldownUntil = 0;
 
-// =====================================
-// 題目產生
-// =====================================
+const QUESTIONS = [
 
-function generateQuestion(){
+{q:"0+0",a:0},
+{q:"0+1",a:1},
+{q:"0+2",a:2},
+{q:"0+3",a:3},
+{q:"0+4",a:4},
+{q:"0+5",a:5},
 
-    const op = Math.random() > 0.5 ? '+' : '-';
+{q:"1+0",a:1},
+{q:"1+1",a:2},
+{q:"1+2",a:3},
+{q:"1+3",a:4},
+{q:"1+4",a:5},
 
-    let a;
-    let b;
+{q:"2+0",a:2},
+{q:"2+1",a:3},
+{q:"2+2",a:4},
+{q:"2+3",a:5},
 
-    if(op === '+'){
+{q:"3+0",a:3},
+{q:"3+1",a:4},
+{q:"3+2",a:5},
 
-        do{
+{q:"4+0",a:4},
+{q:"4+1",a:5},
 
-            a = Math.floor(Math.random()*6);
-            b = Math.floor(Math.random()*6);
+{q:"5+0",a:5},
 
-        }while(a + b > 5);
+{q:"1-0",a:1},
+{q:"1-1",a:0},
 
-        correctAnswer = a + b;
-    }
-    else{
+{q:"2-0",a:2},
+{q:"2-1",a:1},
+{q:"2-2",a:0},
 
-        a = Math.floor(Math.random()*6);
-        b = Math.floor(Math.random()*6);
+{q:"3-0",a:3},
+{q:"3-1",a:2},
+{q:"3-2",a:1},
+{q:"3-3",a:0},
 
-        if(a < b){
+{q:"4-0",a:4},
+{q:"4-1",a:3},
+{q:"4-2",a:2},
+{q:"4-3",a:1},
+{q:"4-4",a:0},
 
-            const t = a;
-            a = b;
-            b = t;
-        }
+{q:"5-0",a:5},
+{q:"5-1",a:4},
+{q:"5-2",a:3},
+{q:"5-3",a:2},
+{q:"5-4",a:1},
+{q:"5-5",a:0}
 
-        correctAnswer = a - b;
-    }
+];
 
-    currentQuestion =
-        `${a} ${op} ${b} = ?`;
+const SKEL = [
+[0,1],[1,2],[2,3],[3,4],
+[0,5],[5,6],[6,7],[7,8],
+[5,9],[9,10],[10,11],[11,12],
+[9,13],[13,14],[14,15],[15,16],
+[13,17],[0,17],[17,18],[18,19],[19,20]
+];
+
+function newQuestion(){
+
+  const r =
+  QUESTIONS[
+    Math.floor(
+      Math.random()*QUESTIONS.length
+    )
+  ];
+
+  question = r.q + " = ?";
+  answer = r.a;
 }
 
-// =====================================
-// 手指數量
-// =====================================
+newQuestion();
 
 function countFingers(l){
 
-    const tips = [8,12,16,20];
-    const pips = [6,10,14,18];
+  let c = 0;
 
-    let count = 0;
+  if(Math.abs(l[4].x-l[3].x) > 0.05) c++;
 
-    tips.forEach((tip,index)=>{
+  if(l[8].y < l[6].y) c++;
 
-        if(
-            l[tip].y <
-            l[pips[index]].y
-        ){
-            count++;
-        }
+  if(l[12].y < l[10].y) c++;
 
-    });
+  if(l[16].y < l[14].y) c++;
 
-    return count;
+  if(l[20].y < l[18].y) c++;
+
+  return c;
 }
-
-// =====================================
-// 👍 比讚辨識
-// =====================================
 
 function isThumbsUp(l){
 
-    const thumbUp =
-        l[4].y < l[3].y;
+  return (
 
-    const fingersDown =
+    l[4].y < l[3].y &&
 
-        l[8].y  > l[6].y  &&
-        l[12].y > l[10].y &&
-        l[16].y > l[14].y &&
-        l[20].y > l[18].y;
+    l[8].y > l[6].y &&
 
-    return (
-        thumbUp &&
-        fingersDown
-    );
+    l[12].y > l[10].y &&
+
+    l[16].y > l[14].y &&
+
+    l[20].y > l[18].y
+
+  );
 }
 
-// =====================================
-// 判定答案
-// =====================================
+const hands = new Hands({
+ locateFile:(f)=>
+ `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+});
 
-function checkAnswer(){
+hands.setOptions({
+ maxNumHands:1,
+ modelComplexity:1,
+ minDetectionConfidence:0.7,
+ minTrackingConfidence:0.5
+});
 
-    if(playerAnswer === null)
-        return;
+hands.onResults((r)=>{
 
-    if(playerAnswer === correctAnswer){
+ if(
+   !r.multiHandLandmarks ||
+   !r.multiHandLandmarks.length
+ ) return;
 
-        score++;
+ lm = r.multiHandLandmarks[0];
 
-        wrongAnswer = false;
+ if(Date.now() < cooldownUntil)
+   return;
 
-        resultText =
-            '✅ Correct!';
+ if(state === "WRONG"){
 
-        resultColor =
-            '#00FF88';
+   if(isThumbsUp(lm)){
 
-        answerLock = true;
+     state = "PLAY";
 
-        answerTime =
-            Date.now();
-    }
-    else{
+     resultText = "重新作答";
 
-        wrongAnswer = true;
+     cooldownUntil =
+       Date.now()+1500;
+   }
 
-        resultText =
-            '❌ Try Again!';
+   return;
+ }
 
-        resultColor =
-            '#FF4444';
-    }
-}
+ playerAnswer =
+   countFingers(lm);
 
-// =====================================
-// MediaPipe
-// =====================================
+ if(playerAnswer === answer){
 
-generateQuestion();
+   score++;
 
-(function(){
+   resultText =
+     "✅ Correct!";
 
-    const hands = new Hands({
+   state = "CORRECT";
 
-        locateFile:file =>
+   setTimeout(()=>{
 
-        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+     newQuestion();
 
-    });
+     state = "PLAY";
 
-    hands.setOptions({
+     resultText = "";
 
-        maxNumHands:1,
+   },1500);
 
-        modelComplexity:1,
+ }else{
 
-        minDetectionConfidence:0.7,
+   state = "WRONG";
 
-        minTrackingConfidence:0.5
+   resultText =
+     "❌ Try Again! 比 👍";
+ }
 
-    });
+});
 
-    hands.onResults(results=>{
-
-        if(
-            results.multiHandLandmarks &&
-            results.multiHandLandmarks.length
-        ){
-
-            lm =
-                results.multiHandLandmarks[0];
-
-            if(!answerLock){
-
-                if(wrongAnswer){
-
-                    if(
-                        isThumbsUp(lm)
-                    ){
-
-                        wrongAnswer = false;
-
-                        resultText =
-                            '👍 請重新作答';
-
-                        resultColor =
-                            '#FFD93D';
-                    }
-                }                else{
-
-                    playerAnswer =
-                        countFingers(lm);
-
-                    checkAnswer();
-                }
-            }
-        }
-        else{
-
-            lm = null;
-
-            playerAnswer = null;
-        }
-
-    });
-
-    const camera = new Camera(
-
-        vid,
-
-        {
-            onFrame:async()=>{
-
-                await hands.send({
-                    image:vid
-                });
-
-            },
-
-            width:W,
-            height:H
-        }
-    );
-
-    camera.start();
-
-})();
-
-// =====================================
-// 繪製攝影機
-// =====================================
+new Camera(vid,{
+ onFrame:async()=>{
+   await hands.send({image:vid});
+ },
+ width:W,
+ height:H
+}).start();
 
 function drawVideo(){
 
-    if(
-        !vid ||
-        vid.readyState < 2
-    ) return;
+ if(vid.readyState < 2)
+   return;
 
-    g.save();
+ g.save();
 
-    g.translate(W,0);
+ g.translate(W,0);
 
-    g.scale(-1,1);
+ g.scale(-1,1);
 
-    g.drawImage(
-        vid,
-        0,
-        0,
-        W,
-        H
-    );
+ g.drawImage(
+   vid,
+   0,
+   0,
+   W,
+   H
+ );
 
-    g.restore();
+ g.restore();
 }
-
-// =====================================
-// 繪製骨架
-// =====================================
 
 function drawSkeleton(){
 
-    if(!lm) return;
+ if(!lm) return;
 
-    g.save();
+ g.strokeStyle =
+ "#00ff88";
 
-    g.strokeStyle =
-        '#00FF88';
+ g.lineWidth = 2;
 
-    g.lineWidth = 2;
+ SKEL.forEach(([a,b])=>{
 
-    SKEL.forEach(([a,b])=>{
+  const ax =
+  (1-lm[a].x)*W;
 
-        const ax =
-            (1-lm[a].x)*W;
+  const ay =
+  lm[a].y*H;
 
-        const ay =
-            lm[a].y*H;
+  const bx =
+  (1-lm[b].x)*W;
 
-        const bx =
-            (1-lm[b].x)*W;
+  const by =
+  lm[b].y*H;
 
-        const by =
-            lm[b].y*H;
+  g.beginPath();
+  g.moveTo(ax,ay);
+  g.lineTo(bx,by);
+  g.stroke();
 
-        g.beginPath();
+ });
 
-        g.moveTo(ax,ay);
-
-        g.lineTo(bx,by);
-
-        g.stroke();
-
-    });
-
-    lm.forEach((p,i)=>{
-
-        const x =
-            (1-p.x)*W;
-
-        const y =
-            p.y*H;
-
-        g.fillStyle =
-            i===0
-            ? '#FF4444'
-            : '#00FF88';
-
-        g.beginPath();
-
-        g.arc(
-            x,
-            y,
-            4,
-            0,
-            Math.PI*2
-        );
-
-        g.fill();
-
-    });
-
-    g.restore();
 }
-
-// =====================================
-// 題目面板
-// =====================================
-
-function drawPanel(){
-
-    g.save();
-
-    g.fillStyle =
-        'rgba(0,0,0,.65)';
-
-    g.fillRect(
-        10,
-        10,
-        300,
-        180
-    );
-
-    g.fillStyle =
-        '#FFFFFF';
-
-    g.font =
-        'bold 28px Arial';
-
-    g.fillText(
-        '手勢算數王',
-        20,
-        45
-    );
-
-    g.font =
-        '24px Arial';
-
-    g.fillText(
-        currentQuestion,
-        20,
-        90
-    );
-
-    g.fillText(
-        '你的答案：' +
-        (
-            playerAnswer === null
-            ? '-'
-            : playerAnswer
-        ),
-        20,
-        130
-    );
-
-    g.fillText(
-        '分數：' + score,
-        20,
-        170
-    );
-
-    g.restore();
-}
-
-// =====================================
-// 顯示結果
-// =====================================
-
-function drawResult(){
-
-    if(
-        resultText === ''
-    ) return;
-
-    g.save();
-
-    g.fillStyle =
-        resultColor;
-
-    g.font =
-        'bold 42px Arial';
-
-    g.textAlign =
-        'center';
-
-    g.fillText(
-
-        resultText,
-
-        W/2,
-
-        70
-
-    );
-
-    g.restore();
-}// =====================================
-// 更新遊戲狀態
-// =====================================
-
-function update(){
-
-    if(answerLock){
-
-        const elapsed =
-            Date.now() -
-            answerTime;
-
-        if(elapsed > 1500){
-
-            answerLock = false;
-
-            resultText = '';
-
-            playerAnswer = null;
-
-            generateQuestion();
-        }
-    }
-}
-
-// =====================================
-// 主迴圈
-// =====================================
 
 function loop(){
 
-    update();
+ g.clearRect(0,0,W,H);
 
-    g.clearRect(
-        0,
-        0,
-        W,
-        H
-    );
+ drawVideo();
 
-    drawVideo();
+ drawSkeleton();
 
-    drawSkeleton();
+ g.fillStyle =
+ "rgba(0,0,0,.6)";
+ g.fillRect(
+ 10,
+ 10,
+ 280,
+ 160
+ );
 
-    drawPanel();
+ g.fillStyle =
+ "#fff";
 
-    drawResult();
+ g.font =
+ "bold 28px Arial";
 
-    // 額外提示
+ g.fillText(
+ "手勢算數王",
+ 20,
+ 40
+ );
 
-    g.save();
+ g.font =
+ "24px Arial";
 
-    g.fillStyle =
-        '#FFFFFF';
+ g.fillText(
+ question,
+ 20,
+ 80
+ );
 
-    g.font =
-        '20px Arial';
+ g.fillText(
+ "答案："+answer,
+ 20,
+ 115
+ );
 
-    g.textAlign =
-        'center';
+ g.fillText(
+ "手勢："+(
+ playerAnswer ?? "-"
+ ),
+ 20,
+ 150
+ );
 
-    if(wrongAnswer){
+ g.fillText(
+ "分數："+score,
+ 20,
+ 185
+ );
 
-        g.fillStyle =
-            '#FFD93D';
+ g.font =
+ "bold 36px Arial";
 
-        g.fillText(
+ g.fillText(
+ resultText,
+ 20,
+ 240
+ );
 
-            '請比 👍 後重新作答',
-
-            W/2,
-
-            H - 40
-
-        );
-    }
-    else{
-
-        g.fillText(
-
-            '請用手指數量回答題目',
-
-            W/2,
-
-            H - 40
-
-        );
-    }
-
-    g.restore();
-
-    requestAnimationFrame(
-        loop
-    );
+ requestAnimationFrame(loop);
 }
-
-// =====================================
-// 開始遊戲
-// =====================================
 
 loop();
