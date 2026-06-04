@@ -161,6 +161,18 @@ function isFive(l){
 
 }
 
+function isTwo(l){
+
+  return (
+    l[8].y < l[6].y &&
+    l[12].y < l[10].y &&
+    l[16].y > l[14].y &&
+    l[20].y > l[18].y &&
+    !isThumbsUp(l)
+  );
+
+}
+
 function detectGesture(l){
 
   if(isThumbsUp(l))
@@ -168,6 +180,9 @@ function detectGesture(l){
 
   if(isOK(l))
     return 'OK';
+
+  if(isTwo(l))
+    return 'TWO';
 
   if(isOne(l))
     return 'ONE';
@@ -222,7 +237,8 @@ hands.onResults((r)=>{
 
   if(state === 'WRONG'){
 
-  if(gesture === 'THUMB'){
+
+  if(gesture === 'TWO'){
 
     state = 'PLAY';
 
